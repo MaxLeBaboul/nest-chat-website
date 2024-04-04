@@ -7,13 +7,9 @@ const getAuthenticationUserSchema = z.object({
   firstName: z.string(),
 });
 
-export const getAuthenticatedUser = async ({
-  request,
-}: {
-  request: Request;
-}) => {
+export const getOptionalUser = async ({ request }: { request: Request }) => {
   const userToken = await getUserToken({ request });
-  if (!userToken) {
+  if (userToken === undefined) {
     return null;
   }
   try {

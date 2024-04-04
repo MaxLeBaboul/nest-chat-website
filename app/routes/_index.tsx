@@ -1,13 +1,8 @@
-import {
-  json,
-  type ActionFunctionArgs,
-  type LoaderFunctionArgs,
-  type MetaFunction,
-} from "@remix-run/node";
-import { Form, useLoaderData } from "@remix-run/react";
+import { type ActionFunctionArgs, type MetaFunction } from "@remix-run/node";
+import { Form } from "@remix-run/react";
 import { z } from "zod";
-import { getAuthenticatedUser } from "~/server/auth.server";
-import { commitUserToken } from "~/server/session.serveur";
+import { useOptionalUser } from "~/root";
+import { authenticateUser } from "~/server/session.serveur";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -17,13 +12,6 @@ const loginSchema = z.object({
 const tokenSchema = z.object({
   access_token: z.string(),
 });
-
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const user = await getAuthenticatedUser({ request });
-  console.log({ user });
-
-  return json({ user });
-};
 export const meta: MetaFunction = () => {
   return [
     { title: "New Chat App" },
@@ -50,23 +38,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   //En cas de succès, on récupère le token
   const { access_token } = tokenSchema.parse(await response.json());
-  console.log({ access_token });
 
-  return json(
-    {},
-    {
-      headers: {
-        "Set-Cookie": await commitUserToken({
-          request,
-          userToken: access_token,
-        }),
-      },
-    }
-  );
+  return await authenticateUser({ request, userToken: access_token });
 };
 
 export default function Index() {
-  const { user } = useLoaderData<typeof loader>();
+  const user = useOptionalUser();
   const isConnected = user != null;
 
   return (
